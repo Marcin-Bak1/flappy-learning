@@ -3,6 +3,7 @@ import os
 import random
 import time
 import math
+import numpy as np
 
 pg.init()
 ### --- Window definitions --- ###
@@ -98,11 +99,23 @@ class environment():
 
 whatShows = 'menu'
 obstacles = []
+mod = 11
 for i in range(0, 21):
-    if i % 11 == 0:
+    if i % mod == 0:
         obstacles.append(obstacle(int(i * width/20))) # Generation of initial obstacles
 
 ### --- Q learning setup --- ###
+### --- 3 environment parameters implies 3 dimensional matrix. For each set of int there are 2 actions - jump or not jump --- ###
+dim_env = [30] * 3
+dim_act = 2
+max_x = (mod-1) * width/20
+max_y = height
+v_max = 1 # This is determined by the bird class
+min_x = -30 # This is determined by the bird class
+min_y = 0
+v_min = -1 # This is determined by the bird class
+discrete_os_win_size = [max_x - min_x, max_y - min_y, v_max - v_min] / dim_env # This discretises the environment variables
+Q = np.random.uniform(low = -2, high = 0, size = dim_env + [dim_act])
 
 
 
@@ -145,7 +158,7 @@ while True:
                 whatShows = 'gameover'
             if o.is_scored(player):
                 score = score + 1
-        if player.y > height: # If player gets out of bonds
+        if player.y > height or player.y < 0: # If player gets out of bonds
             whatShows = 'gameover'
         next_obstacle_x = -1000
         for o in obstacles:
@@ -158,7 +171,9 @@ while True:
 
         ### --- This is where the learning part will be coded --- ###
         environ = environment(player, next_obstacle, width, height)
-        print(environ.give_env())
+        print(max_x, environ.dx_norm)
+        if environ.dx_norm > max_x:
+            print('Crap')
 
         player.draw()
         player.physics()
