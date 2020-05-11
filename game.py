@@ -88,7 +88,7 @@ class bird():
 whatShows = 'menu'
 obstacles = []
 for i in range(0, 21):
-    if i % 7 == 0:
+    if i % 11 == 0:
         obstacles.append(obstacle(int(i * width/20))) # Generation of initial obstacles
 while True:
     for event in pg.event.get():
@@ -129,6 +129,8 @@ while True:
                 whatShows = 'gameover'
             if o.is_scored(player):
                 score = score + 1
+        if player.y > height: # If player gets out of bonds
+            whatShows = 'gameover'
         for o in obstacles:
             if o.x <= -o.width: # This clause detects if the obstacle has left the screen and then spawns the next obstacle
                 obstacles.remove(o)
