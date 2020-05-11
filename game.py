@@ -83,13 +83,29 @@ class bird():
         self.y = self.y - self.v
         self.shape = pg.Rect(self.x, self.y, self.width, self.height)
 
+class environment():
+    def __init__(self, player, next_obstacle, width, height):
+        self.dx_norm = (next_obstacle.x - player.x)#/width
+        self.dy_norm = (next_obstacle.y_down - player.y)#/height
+        self.v_norm = player.v#/1
+    def give_env(self):
+        tempor = [self.dx_norm, self.dy_norm, self.v_norm]
+        return tempor
+
+
 
 ### --- Initial game setup --- ###
+
 whatShows = 'menu'
 obstacles = []
 for i in range(0, 21):
     if i % 11 == 0:
         obstacles.append(obstacle(int(i * width/20))) # Generation of initial obstacles
+
+### --- Q learning setup --- ###
+
+
+
 while True:
     for event in pg.event.get():
         if event.type == pg.QUIT:
@@ -131,10 +147,19 @@ while True:
                 score = score + 1
         if player.y > height: # If player gets out of bonds
             whatShows = 'gameover'
+        next_obstacle_x = -1000
         for o in obstacles:
-            if o.x <= -o.width: # This clause detects if the obstacle has left the screen and then spawns the next obstacle
+            if o.x > player.x and next_obstacle_x < o.x: #This clause spots the next obstacle on the way of the player - neccessary for the environment variable
+                next_obstacle = o
+                next_obstacle_x = o.x
+            elif o.x <= -o.width: # This clause detects if the obstacle has left the screen and then spawns the next obstacle
                 obstacles.remove(o)
                 obstacles.append(obstacle(width))
+
+        ### --- This is where the learning part will be coded --- ###
+        environ = environment(player, next_obstacle, width, height)
+        print(environ.give_env())
+
         player.draw()
         player.physics()
         player.impulse(imp_value)
