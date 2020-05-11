@@ -85,37 +85,46 @@ class bird():
         self.shape = pg.Rect(self.x, self.y, self.width, self.height)
 
 class environment():
+    """This class holds the environment essential for learning"""
     def __init__(self, player, next_obstacle, width, height):
         self.dx_norm = (next_obstacle.x - player.x)#/width
         self.dy_norm = (next_obstacle.y_down - player.y)#/height
         self.v_norm = player.v#/1
-    def give_env(self):
+    def give_env(self, dis):
         tempor = [self.dx_norm, self.dy_norm, self.v_norm]
         return tempor
-
+    def get_discrete(self, discrete_os_win_size, min_values):
+        state = [self.dx_norm, self.dy_norm, self.v_norm]
+        discrete_state = (np.array(state) - np.array(min_values))/np.array(discrete_os_win_size)
+        return tuple(discrete_state.astype(np.int))
 
 
 ### --- Initial game setup --- ###
 
 whatShows = 'menu'
-obstacles = []
 mod = 11
-for i in range(0, 21):
-    if i % mod == 0:
-        obstacles.append(obstacle(int(i * width/20))) # Generation of initial obstacles
 
 ### --- Q learning setup --- ###
 ### --- 3 environment parameters implies 3 dimensional matrix. For each set of int there are 2 actions - jump or not jump --- ###
+LEARNING_RATE = 0.1
+DISCOUNT = 0.95
+EPISODES = 25000
+
+
 dim_env = [30] * 3
 dim_act = 2
 max_x = (mod-1) * width/20
 max_y = height
 v_max = 1 # This is determined by the bird class
 min_x = -30 # This is determined by the bird class
-min_y = 0
+min_y = -height
 v_min = -1 # This is determined by the bird class
-discrete_os_win_size = [max_x - min_x, max_y - min_y, v_max - v_min] / dim_env # This discretises the environment variables
+discrete_os_win_size = np.array([max_x - min_x, max_y - min_y, v_max - v_min]) / np.array(dim_env) # This discretises the environment variables
+min_values = [min_x, min_y, v_min]
 Q = np.random.uniform(low = -2, high = 0, size = dim_env + [dim_act])
+
+def get_discrete_env(env):
+    """This functions discretises the environment class"""
 
 
 
@@ -134,6 +143,10 @@ while True:
                     g = 0.01
                     player = bird(300, 300)
                     clicked = 0
+                    obstacles = []
+                    for i in range(0, 21):
+                        if i % mod == 0:
+                            obstacles.append(obstacle(int(i * width / 20)))  # Generation of initial obstacles
                 elif whatShows == 'gameplay' and clicked == 0:
                     imp_value = 2
                     clicked = 1 # This variable makes sure that for each separate click of the space key only once impulse is provided
@@ -171,9 +184,7 @@ while True:
 
         ### --- This is where the learning part will be coded --- ###
         environ = environment(player, next_obstacle, width, height)
-        print(max_x, environ.dx_norm)
-        if environ.dx_norm > max_x:
-            print('Crap')
+        print(environ.get_discrete(discrete_os_win_size, min_values))
 
         player.draw()
         player.physics()
