@@ -96,6 +96,7 @@ class environment():
     def get_discrete(self, discrete_os_win_size, min_values):
         state = [self.dx_norm, self.dy_norm, self.v_norm]
         discrete_state = (np.array(state) - np.array(min_values))/np.array(discrete_os_win_size)
+        discrete_state = discrete_state - 1
         return tuple(discrete_state.astype(np.int))
 
 
@@ -107,11 +108,10 @@ mod = 11
 ### --- Q learning setup --- ###
 ### --- 3 environment parameters implies 3 dimensional matrix. For each set of int there are 2 actions - jump or not jump --- ###
 LEARNING_RATE = 0.1
+reward = 0
 DISCOUNT = 0.95
 EPISODES = 25000
-
-
-dim_env = [30] * 3
+dim_env = [100] * 3
 dim_act = 2
 max_x = (mod-1) * width/20
 max_y = height
@@ -123,11 +123,11 @@ discrete_os_win_size = np.array([max_x - min_x, max_y - min_y, v_max - v_min]) /
 min_values = [min_x, min_y, v_min]
 Q = np.random.uniform(low = -2, high = 0, size = dim_env + [dim_act])
 
-def get_discrete_env(env):
-    """This functions discretises the environment class"""
 
 
-
+render_modulo = 100
+EPISODES = 25000
+episode = 0
 while True:
     for event in pg.event.get():
         if event.type == pg.QUIT:
@@ -140,7 +140,7 @@ while True:
                     v_screen = 1
                     score = 0
                     imp_value = 0.1
-                    g = 0.01
+                    g = 1
                     player = bird(300, 300)
                     clicked = 0
                     obstacles = []
@@ -164,34 +164,68 @@ while True:
         write('Game over!, please press space to try again!', width/8, height/2, 20)
         write('Your score is ' + str(score), width / 8, 3 * height / 4, 20)
     elif whatShows == 'gameplay':
+        ### --- This is where the learning part will be coded --- ###
+        next_obstacle_x = -1000
+        for o in obstacles:
+            if o.x > player.x and next_obstacle_x < o.x:  # This clause spots the next obstacle on the way of the player - neccessary for the environment variable
+                next_obstacle = o
+                next_obstacle_x = o.x
+        environ = environment(player, next_obstacle, width, height)
+        state = environ.get_discrete(discrete_os_win_size, min_values)
+        action = np.argmax(Q[state])
+
+        if action == 0:
+            imp_value = 0
+        else:
+            imp_value = 2
+
+        ### --- Updating the game --- ###
         for o in obstacles:
             o.movement(v_screen)
             o.draw()
             if o.collision(player):
                 whatShows = 'gameover'
+                episode = episode + 1
             if o.is_scored(player):
                 score = score + 1
-        if player.y > height or player.y < 0: # If player gets out of bonds
+        if player.y > height or player.y < 0:  # If player gets out of bonds
             whatShows = 'gameover'
+            episode = episode + 1
         next_obstacle_x = -1000
         for o in obstacles:
-            if o.x > player.x and next_obstacle_x < o.x: #This clause spots the next obstacle on the way of the player - neccessary for the environment variable
+            if o.x > player.x and next_obstacle_x < o.x:  # This clause spots the next obstacle on the way of the player - neccessary for the environment variable
                 next_obstacle = o
                 next_obstacle_x = o.x
-            elif o.x <= -o.width: # This clause detects if the obstacle has left the screen and then spawns the next obstacle
+            elif o.x <= -o.width:  # This clause detects if the obstacle has left the screen and then spawns the next obstacle
                 obstacles.remove(o)
                 obstacles.append(obstacle(width))
-
-        ### --- This is where the learning part will be coded --- ###
-        environ = environment(player, next_obstacle, width, height)
-        print(environ.get_discrete(discrete_os_win_size, min_values))
-
-        player.draw()
-        player.physics()
         player.impulse(imp_value)
-        imp_value = 0
+        player.physics()
         player.move()
-        write('score : ' + str(score), 50, 20, 20)
-        write('v = ' + str(player.v), 50, 50, 20)
-    time.sleep(0.001) # This wait time is calibrated to provide the best experience
-    pg.display.update()
+
+        ### --- Getting new state --- ###
+        environ_new = environment(player, next_obstacle, width, height)
+        new_state = environ_new.get_discrete(discrete_os_win_size, min_values)
+        if not whatShows == 'gameover':
+            max_future_q = np.max(Q[new_state])
+            current_q = Q[state + (action,)]
+            new_q = (1-LEARNING_RATE) * current_q + LEARNING_RATE * (reward + DISCOUNT * max_future_q)
+            Q[state + (action,)] = new_q
+        if whatShows == 'gameover':
+            Q[state + (action,)] = -1000
+
+        if whatShows != 'gameplay':
+            whatShows = 'gameplay'
+            score = 0
+            player = bird(300, 300)
+            clicked = 0
+            obstacles = []
+            for i in range(0, 21):
+                if i % mod == 0:
+                    obstacles.append(obstacle(int(i * width / 20)))  # Generation of initial obstacles
+    #time.sleep(0.001) # This wait time is calibrated to provide the best experience
+        if episode % render_modulo == 0 or score > 10:
+            write('score : ' + str(score), 50, 20, 20)
+            write('v = ' + str(player.v), 50, 50, 20)
+            player.draw()
+            pg.display.update()
