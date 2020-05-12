@@ -12,7 +12,7 @@ height = 600
 screen = pg.display.set_mode((width, height))
 
 def write(text, x, y, size):
-    """This functions writes a text message in a specified location"""
+    """This function writes a text message in a specified location"""
     cz = pg.font.SysFont("Arial", size)
     rend = cz.render(text, 1, (255, 0, 0))
     screen.blit(rend, (x, y))
@@ -85,7 +85,7 @@ class bird():
         self.shape = pg.Rect(self.x, self.y, self.width, self.height)
 
 class environment():
-    """This class holds the environment essential for learning"""
+    """This class holds the parameters describing the environment. It is used for learning"""
     def __init__(self, player, next_obstacle, width, height):
         self.dx_norm = (next_obstacle.x - player.x)#/width
         self.dy_norm = (next_obstacle.y_down - player.y)#/height
@@ -96,14 +96,14 @@ class environment():
     def get_discrete(self, discrete_os_win_size, min_values):
         state = [self.dx_norm, self.dy_norm, self.v_norm]
         discrete_state = (np.array(state) - np.array(min_values))/np.array(discrete_os_win_size)
-        discrete_state = discrete_state - 1
+        discrete_state = discrete_state - 1 # This is to ensure proper indexing
         return tuple(discrete_state.astype(np.int))
 
 
 ### --- Initial game setup --- ###
 
 whatShows = 'menu'
-mod = 11
+mod = 11 # This variable controls how spaced the obstacles are
 
 ### --- Q learning setup --- ###
 ### --- 3 environment parameters implies 3 dimensional matrix. For each set of int there are 2 actions - jump or not jump --- ###
@@ -121,12 +121,11 @@ min_y = -height
 v_min = -1 # This is determined by the bird class
 discrete_os_win_size = np.array([max_x - min_x, max_y - min_y, v_max - v_min]) / np.array(dim_env) # This discretises the environment variables
 min_values = [min_x, min_y, v_min]
-Q = np.random.uniform(low = -2, high = 0, size = dim_env + [dim_act])
+Q = np.random.uniform(low = -2, high = 0, size = dim_env + [dim_act]) #As the reward is -1000 when the agent loses and 0 otherwise, those values do not matter much as long as they are inbetween -1000 and 0
 
 
 
 render_modulo = 100
-EPISODES = 25000
 episode = 0
 while True:
     for event in pg.event.get():
@@ -135,7 +134,7 @@ while True:
             quit()
         if event.type == pg.KEYDOWN:
             if event.key == pg.K_SPACE:
-                if whatShows != 'gameplay':
+                if whatShows == 'menu':
                     whatShows = 'gameplay'
                     v_screen = 1
                     score = 0
@@ -147,12 +146,6 @@ while True:
                     for i in range(0, 21):
                         if i % mod == 0:
                             obstacles.append(obstacle(int(i * width / 20)))  # Generation of initial obstacles
-                elif whatShows == 'gameplay' and clicked == 0:
-                    imp_value = 2
-                    clicked = 1 # This variable makes sure that for each separate click of the space key only once impulse is provided
-        if event.type == pg.KEYUP and event.key == pg.K_SPACE:
-            clicked = 0
-            imp_value = 0
 
     screen.fill((0,0,0))
 
@@ -160,11 +153,8 @@ while True:
         graphic = pg.image.load(os.path.join('logo.png'))
         screen.blit(graphic, (0, 0))
         write('Press space to start', 200, 450, 20)
-    elif whatShows == 'gameover':
-        write('Game over!, please press space to try again!', width/8, height/2, 20)
-        write('Your score is ' + str(score), width / 8, 3 * height / 4, 20)
+        pg.display.update()
     elif whatShows == 'gameplay':
-        ### --- This is where the learning part will be coded --- ###
         next_obstacle_x = -1000
         for o in obstacles:
             if o.x > player.x and next_obstacle_x < o.x:  # This clause spots the next obstacle on the way of the player - neccessary for the environment variable
@@ -174,6 +164,8 @@ while True:
         state = environ.get_discrete(discrete_os_win_size, min_values)
         action = np.argmax(Q[state])
 
+        ### --- The value of impulse needs to be comparable to value of g. If g is far smaller then in initiate random state the agent will go up in most of cases --- ###
+        ### --- It will hence take far longer for the agent to notice the states in the lower part of the game space. If g is far larger than impulse the reverse will happen --- ###
         if action == 0:
             imp_value = 0
         else:
@@ -191,7 +183,7 @@ while True:
         if player.y > height or player.y < 0:  # If player gets out of bonds
             whatShows = 'gameover'
             episode = episode + 1
-        next_obstacle_x = -1000
+        next_obstacle_x = -10000
         for o in obstacles:
             if o.x > player.x and next_obstacle_x < o.x:  # This clause spots the next obstacle on the way of the player - neccessary for the environment variable
                 next_obstacle = o
@@ -206,14 +198,17 @@ while True:
         ### --- Getting new state --- ###
         environ_new = environment(player, next_obstacle, width, height)
         new_state = environ_new.get_discrete(discrete_os_win_size, min_values)
+
         if not whatShows == 'gameover':
+            ### --- This clause applies the Q - learning formula --- ###
             max_future_q = np.max(Q[new_state])
             current_q = Q[state + (action,)]
             new_q = (1-LEARNING_RATE) * current_q + LEARNING_RATE * (reward + DISCOUNT * max_future_q)
             Q[state + (action,)] = new_q
         if whatShows == 'gameover':
-            Q[state + (action,)] = -1000
+            Q[state + (action,)] = -1000 # If the agent loses it is penalised. If the reward is not a positive number this value is not crucial as long as it is < 0
 
+        ### --- This sets up a new game if the agent has lost --- ###
         if whatShows != 'gameplay':
             whatShows = 'gameplay'
             score = 0
@@ -223,8 +218,9 @@ while True:
             for i in range(0, 21):
                 if i % mod == 0:
                     obstacles.append(obstacle(int(i * width / 20)))  # Generation of initial obstacles
-    #time.sleep(0.001) # This wait time is calibrated to provide the best experience
-        if episode % render_modulo == 0 or score > 10:
+
+        ### --- This clause contains all the graphic representation of the game and renders only in certain conditions to minimise computing time --- ###
+        if episode % render_modulo == 0 or score > 50:
             write('score : ' + str(score), 50, 20, 20)
             write('v = ' + str(player.v), 50, 50, 20)
             player.draw()
