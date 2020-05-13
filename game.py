@@ -100,11 +100,11 @@ class environment():
         ### --- v = (-1, 1) with spacing 0.1 --- ###
         state = [self.dx, self.dy, self.v]
         if self.dy < 150:
-            tempor_dy = self.dy - self.dy % 40
-            index_dy = (tempor_dy + 450)/40
+            tempor_dy = self.dy - self.dy % 20
+            index_dy = (tempor_dy + 450)/20
         else:
-            tempor_dy = self.dy - self.dy % 60
-            index_dy = 15 + (tempor_dy - 150)/60
+            tempor_dy = self.dy - self.dy % 30
+            index_dy = 30 + (tempor_dy - 150)/30
         if self.dx > 100:
             tempor_dx = self.dx - self.dx % 40
             index_dx = 14 + (tempor_dx - 100)/40
@@ -128,7 +128,7 @@ LEARNING_RATE = 0.95
 reward = 0
 DISCOUNT = 0.95
 EPISODES = 25000
-dim_env = [20, 24, 20] #number of dx, dy, v indices
+dim_env = [20, 46, 20] #number of dx, dy, v indices
 dim_act = 2
 Q = np.random.uniform(low = -2, high = 0, size = dim_env + [dim_act])
 
