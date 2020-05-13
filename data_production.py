@@ -23,7 +23,7 @@ class obstacle():
         self.x = x
         self.width = 50
         self.y_up = 0
-        self.h_up = random.randint(150, 250)
+        self.h_up = random.randint(50, 350)
         self.space = 150 # This parameter determines the space between upper and lower obstacles
         self.y_down = self.h_up + self.space
         self.h_down = height - self.y_down
@@ -107,10 +107,10 @@ mod = 11 # This variable controls how spaced the obstacles are
 
 ### --- Q learning setup --- ###
 ### --- 3 environment parameters implies 3 dimensional matrix. For each set of int there are 2 actions - jump or not jump --- ###
-LEARNING_RATE = 0.1
+LEARNING_RATE = 0.5
 reward = 0
 DISCOUNT = 0.95
-EPISODES = 25000
+EPISODES = 50000
 dim_env = [100] * 3
 dim_act = 2
 max_x = (mod-1) * width/20
@@ -231,7 +231,8 @@ while episode < EPISODES:
             write('score : ' + str(score), 50, 20, 20)
             write('episode = ' + str(episode), 50, 50, 20)
             write('state = ' + str(state), 50, 70, 20)
-            write('mavg = ' + str(results['MAVG'][-1]), 50, 90, 20)
+            if len(results['MAVG']) > 0:
+                write('mavg = ' + str(results['MAVG'][-1]), 50, 90, 20)
             player.draw()
             pg.display.update()
 output = pd.DataFrame(results)

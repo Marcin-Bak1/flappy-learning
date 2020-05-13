@@ -23,7 +23,7 @@ class obstacle():
         self.x = x
         self.width = 50
         self.y_up = 0
-        self.h_up = random.randint(150, 250)
+        self.h_up = random.randint(50, 350)
         self.space = 150 # This parameter determines the space between upper and lower obstacles
         self.y_down = self.h_up + self.space
         self.h_down = height - self.y_down
@@ -107,7 +107,7 @@ mod = 11 # This variable controls how spaced the obstacles are
 
 ### --- Q learning setup --- ###
 ### --- 3 environment parameters implies 3 dimensional matrix. For each set of int there are 2 actions - jump or not jump --- ###
-LEARNING_RATE = 0.1
+LEARNING_RATE = 0.5
 reward = 0
 DISCOUNT = 0.95
 EPISODES = 25000
@@ -125,7 +125,7 @@ Q = np.random.uniform(low = -2, high = 0, size = dim_env + [dim_act]) #As the re
 
 
 
-render_modulo = 100
+render_modulo = 500
 episode = 0
 while True:
     for event in pg.event.get():
@@ -220,8 +220,9 @@ while True:
                     obstacles.append(obstacle(int(i * width / 20)))  # Generation of initial obstacles
 
         ### --- This clause contains all the graphic representation of the game and renders only in certain conditions to minimise computing time --- ###
-        if episode % render_modulo == 0 or score > 50:
+        if episode % render_modulo == 0 or score > 100:
             write('score : ' + str(score), 50, 20, 20)
+            write('episode = ' + str(episode), 50, 70, 20)
             write('v = ' + str(player.v), 50, 50, 20)
             player.draw()
             pg.display.update()
