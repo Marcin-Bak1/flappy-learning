@@ -126,11 +126,11 @@ mod = 11 # This variable controls how spaced the obstacles are
 ### --- 3 environment parameters implies 3 dimensional matrix. For each set of int there are 2 actions - jump or not jump --- ###
 LEARNING_RATE = 0.95
 reward = 0
-DISCOUNT = 0.95
+DISCOUNT = 1
 EPISODES = 25000
 dim_env = [20, 46, 20] #number of dx, dy, v indices
 dim_act = 2
-Q = np.random.uniform(low = -2, high = 0, size = dim_env + [dim_act])
+Q = np.random.uniform(low = -500, high = 0, size = dim_env + [dim_act])
 
 
 
@@ -212,7 +212,7 @@ while True:
         if whatShows != 'gameover':
             reward = 0
         if whatShows == 'gameover':
-            reward = -1000 # If the agent loses it is penalised. If the reward is not a positive number this value is not crucial as long as it is < 0
+            reward = -1000
         max_future_q = np.max(Q[new_state])
         current_q = Q[state + (action,)]
         new_q = (1 - LEARNING_RATE) * current_q + LEARNING_RATE * (reward + DISCOUNT * max_future_q)
@@ -231,7 +231,7 @@ while True:
                     obstacles.append(obstacle(int(i * width / 20)))  # Generation of initial obstacles
 
         ### --- This clause contains all the graphic representation of the game and renders only in certain conditions to minimise computing time --- ###
-        if episode % render_modulo == 0 or score > 20:
+        if episode % render_modulo == 0 or score > 10:
             write('score : ' + str(score), 50, 20, 20)
             write('episode = ' + str(episode), 50, 70, 20)
             write('state_disc = ' + str(environ.get_discrete()), 50, 50, 20)

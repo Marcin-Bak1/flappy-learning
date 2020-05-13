@@ -126,16 +126,16 @@ mod = 11 # This variable controls how spaced the obstacles are
 ### --- 3 environment parameters implies 3 dimensional matrix. For each set of int there are 2 actions - jump or not jump --- ###
 LEARNING_RATE = 0.95
 reward = 0
-DISCOUNT = 0.95
+DISCOUNT = 1
 EPISODES = 25000
 dim_env = [20, 46, 20] #number of dx, dy, v indices
 dim_act = 2
-Q = np.random.uniform(low = -2, high = 0, size = dim_env + [dim_act])
+Q = np.random.uniform(low = -500, high = 0, size = dim_env + [dim_act])
 
 
 
 render_modulo = 500
-EPISODES = 10000
+EPISODES = 25000
 episode = 0
 moving_avg_range = 100
 results = {'Episode': [], 'Score': [], 'MAVG': []}
@@ -237,14 +237,16 @@ while episode < EPISODES:
                     obstacles.append(obstacle(int(i * width / 20)))  # Generation of initial obstacles
 
         ### --- This clause contains all the graphic representation of the game and renders only in certain conditions to minimise computing time --- ###
-        if episode % render_modulo == 0 or score > 20:
+        if episode % render_modulo == 0:
             write('score : ' + str(score), 50, 20, 20)
             write('episode = ' + str(episode), 50, 70, 20)
             write('state_disc = ' + str(environ.get_discrete()), 50, 50, 20)
             write('state = ' + str(environ.give_env()), 50, 90, 20)
-            if isinstance(tempor, float) > 0:
+            try:
                 write('MAVG = ' + str(tempor), 50, 110, 20)
+            except:
+                print('MAVG cannot be defined')
             player.draw()
             pg.display.update()
 output = pd.DataFrame(results)
-output.to_csv(os.path.join('./iteration_score.csv'))
+output.to_csv(os.path.join('./iteration_score_discount1.csv'))
