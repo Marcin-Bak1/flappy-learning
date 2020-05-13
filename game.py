@@ -87,17 +87,34 @@ class bird():
 class environment():
     """This class holds the parameters describing the environment. It is used for learning"""
     def __init__(self, player, next_obstacle, width, height):
-        self.dx_norm = (next_obstacle.x - player.x)#/width
-        self.dy_norm = (next_obstacle.y_down - player.y)#/height
-        self.v_norm = player.v#/1
-    def give_env(self, dis):
-        tempor = [self.dx_norm, self.dy_norm, self.v_norm]
+        self.dx = (next_obstacle.x - player.x)#/width
+        self.dy = (next_obstacle.y_down - player.y)#/height
+        self.v = player.v#/1
+    def give_env(self):
+        tempor = [self.dx, self.dy, self.v]
         return tempor
-    def get_discrete(self, discrete_os_win_size, min_values):
-        state = [self.dx_norm, self.dy_norm, self.v_norm]
-        discrete_state = (np.array(state) - np.array(min_values))/np.array(discrete_os_win_size)
-        discrete_state = discrete_state - 1 # This is to ensure proper indexing
-        return tuple(discrete_state.astype(np.int))
+    def get_discrete(self):
+        """ This method maps environment to the index in Q matrix
+        To make the learning faster, there will be more cells in Q matrix corresponding to area below the pipe spacing and less above as that area is more crucial"""
+        ### --- dX = (300, 100) with spacing 40 U (100, -30) with spacing 10, dY = (-450, , 150) with spacing 40 U (150, 600) with spacing 90 --- ###
+        ### --- v = (-1, 1) with spacing 0.1 --- ###
+        state = [self.dx, self.dy, self.v]
+        if self.dy < 150:
+            tempor_dy = self.dy - self.dy % 40
+            index_dy = (tempor_dy + 450)/40
+        else:
+            tempor_dy = self.dy - self.dy % 60
+            index_dy = 15 + (tempor_dy - 150)/60
+        if self.dx > 100:
+            tempor_dx = self.dx - self.dx % 40
+            index_dx = 14 + (tempor_dx - 100)/40
+        else:
+            tempor_dx = self.dx - self.dx % 10
+            index_dx = (tempor_dx + 30)/10
+        tempor_v = self.v - self.v % 0.1
+        index_v = (tempor_v + 1)/0.1
+        output = np.array([index_dx, index_dy, index_v])
+        return tuple(output.astype(np.int))
 
 
 ### --- Initial game setup --- ###
@@ -107,21 +124,13 @@ mod = 11 # This variable controls how spaced the obstacles are
 
 ### --- Q learning setup --- ###
 ### --- 3 environment parameters implies 3 dimensional matrix. For each set of int there are 2 actions - jump or not jump --- ###
-LEARNING_RATE = 0.5
+LEARNING_RATE = 0.95
 reward = 0
 DISCOUNT = 0.95
 EPISODES = 25000
-dim_env = [100] * 3
+dim_env = [20, 24, 20] #number of dx, dy, v indices
 dim_act = 2
-max_x = (mod-1) * width/20
-max_y = height
-v_max = 1 # This is determined by the bird class
-min_x = -30 # This is determined by the bird class
-min_y = -height
-v_min = -1 # This is determined by the bird class
-discrete_os_win_size = np.array([max_x - min_x, max_y - min_y, v_max - v_min]) / np.array(dim_env) # This discretises the environment variables
-min_values = [min_x, min_y, v_min]
-Q = np.random.uniform(low = -2, high = 0, size = dim_env + [dim_act]) #As the reward is -1000 when the agent loses and 0 otherwise, those values do not matter much as long as they are inbetween -1000 and 0
+Q = np.random.uniform(low = -2, high = 0, size = dim_env + [dim_act])
 
 
 
@@ -161,7 +170,7 @@ while True:
                 next_obstacle = o
                 next_obstacle_x = o.x
         environ = environment(player, next_obstacle, width, height)
-        state = environ.get_discrete(discrete_os_win_size, min_values)
+        state = environ.get_discrete()
         action = np.argmax(Q[state])
 
         ### --- The value of impulse needs to be comparable to value of g. If g is far smaller then in initiate random state the agent will go up in most of cases --- ###
@@ -197,16 +206,18 @@ while True:
 
         ### --- Getting new state --- ###
         environ_new = environment(player, next_obstacle, width, height)
-        new_state = environ_new.get_discrete(discrete_os_win_size, min_values)
+        new_state = environ_new.get_discrete()
 
-        if not whatShows == 'gameover':
-            ### --- This clause applies the Q - learning formula --- ###
-            max_future_q = np.max(Q[new_state])
-            current_q = Q[state + (action,)]
-            new_q = (1-LEARNING_RATE) * current_q + LEARNING_RATE * (reward + DISCOUNT * max_future_q)
-            Q[state + (action,)] = new_q
+        ### --- This clause applies the Q - learning formula --- ###
+        if whatShows != 'gameover':
+            reward = 0
         if whatShows == 'gameover':
-            Q[state + (action,)] = -1000 # If the agent loses it is penalised. If the reward is not a positive number this value is not crucial as long as it is < 0
+            reward = -1000 # If the agent loses it is penalised. If the reward is not a positive number this value is not crucial as long as it is < 0
+        max_future_q = np.max(Q[new_state])
+        current_q = Q[state + (action,)]
+        new_q = (1 - LEARNING_RATE) * current_q + LEARNING_RATE * (reward + DISCOUNT * max_future_q)
+        Q[state + (action,)] = new_q
+
 
         ### --- This sets up a new game if the agent has lost --- ###
         if whatShows != 'gameplay':
@@ -220,9 +231,10 @@ while True:
                     obstacles.append(obstacle(int(i * width / 20)))  # Generation of initial obstacles
 
         ### --- This clause contains all the graphic representation of the game and renders only in certain conditions to minimise computing time --- ###
-        if episode % render_modulo == 0 or score > 100:
+        if episode % render_modulo == 0 or score > 20:
             write('score : ' + str(score), 50, 20, 20)
             write('episode = ' + str(episode), 50, 70, 20)
-            write('v = ' + str(player.v), 50, 50, 20)
+            write('state_disc = ' + str(environ.get_discrete()), 50, 50, 20)
+            write('state = ' + str(environ.give_env()), 50, 90, 20)
             player.draw()
             pg.display.update()

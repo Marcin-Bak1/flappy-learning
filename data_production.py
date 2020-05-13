@@ -90,7 +90,7 @@ class environment():
         self.dx_norm = (next_obstacle.x - player.x)#/width
         self.dy_norm = (next_obstacle.y_down - player.y)#/height
         self.v_norm = player.v#/1
-    def give_env(self, dis):
+    def give_env(self):
         tempor = [self.dx_norm, self.dy_norm, self.v_norm]
         return tempor
     def get_discrete(self, discrete_os_win_size, min_values):
@@ -227,10 +227,10 @@ while episode < EPISODES:
                     obstacles.append(obstacle(int(i * width / 20)))  # Generation of initial obstacles
 
         ### --- This clause contains all the graphic representation of the game and renders only in certain conditions to minimise computing time --- ###
-        if episode % render_modulo == 0:
+        if True:#episode % render_modulo == 0:
             write('score : ' + str(score), 50, 20, 20)
             write('episode = ' + str(episode), 50, 50, 20)
-            write('state = ' + str(state), 50, 70, 20)
+            write('state = ' + str(environ.give_env()), 50, 70, 20)
             if len(results['MAVG']) > 0:
                 write('mavg = ' + str(results['MAVG'][-1]), 50, 90, 20)
             player.draw()
