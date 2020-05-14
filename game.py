@@ -27,7 +27,7 @@ class obstacle():
         self.space = 150 # This parameter determines the space between upper and lower obstacles
         self.y_down = self.h_up + self.space
         self.h_down = height - self.y_down
-        self.color = (160, 140, 190)
+        self.color = (0, 204, 0)
         self.shape_up = pg.Rect(self.x, self.y_up, self.width, self.h_up)
         self.shape_down = pg.Rect(self.x, self.y_down, self.width, self.h_down)
         self.shape_score = pg.Rect(self.x, self.y_up, self.width, 600)
