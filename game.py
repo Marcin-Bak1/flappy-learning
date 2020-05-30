@@ -56,6 +56,7 @@ class obstacle():
             return False
 
 class bird():
+    """This class represents the player and holds properties and physics of the bird"""
     def __init__(self, x, y):
         self.x = x
         self.y = y
@@ -95,8 +96,8 @@ class environment():
         return tempor
     def get_discrete(self):
         """ This method maps environment to the index in Q matrix
-        To make the learning faster, there will be more cells in Q matrix corresponding to area below the pipe spacing and less above as that area is more crucial"""
-        ### --- dX = (300, 100) with spacing 40 U (100, -30) with spacing 10, dY = (-450, , 150) with spacing 40 U (150, 600) with spacing 90 --- ###
+        To make the learning faster, there will be more cells in Q matrix corresponding to area below the pipe spacing and less above as that area is more crucial. Similarly the X coordinate will hav ehigher resolution closer to the pipe"""
+        ### --- dX = (300, 100) with spacing 40 U (100, -30) with spacing 10, dY = (-450, , 150) with spacing 20 U (150, 600) with spacing 30 --- ###
         ### --- v = (-1, 1) with spacing 0.1 --- ###
         state = [self.dx, self.dy, self.v]
         if self.dy < 150:
@@ -144,13 +145,12 @@ while True:
         if event.type == pg.KEYDOWN:
             if event.key == pg.K_SPACE:
                 if whatShows == 'menu':
+                    ### --- Initial game setup --- ###
                     whatShows = 'gameplay'
                     v_screen = 1
                     score = 0
-                    imp_value = 0.1
                     g = 1
                     player = bird(300, 300)
-                    clicked = 0
                     obstacles = []
                     for i in range(0, 21):
                         if i % mod == 0:
@@ -232,7 +232,7 @@ while True:
 
         ### --- This clause contains all the graphic representation of the game and renders only in certain conditions to minimise computing time --- ###
         if episode % render_modulo == 0 or score > 10:
-            write('score : ' + str(score), 50, 20, 20)
+            write('score = ' + str(score), 50, 20, 20)
             write('episode = ' + str(episode), 50, 70, 20)
             write('state_disc = ' + str(environ.get_discrete()), 50, 50, 20)
             write('state = ' + str(environ.give_env()), 50, 90, 20)
