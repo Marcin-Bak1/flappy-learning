@@ -127,7 +127,7 @@ mod = 11 # This variable controls how spaced the obstacles are
 ### --- 3 environment parameters implies 3 dimensional matrix. For each set of int there are 2 actions - jump or not jump --- ###
 LEARNING_RATE = 0.95
 reward = 0
-DISCOUNT = 1
+DISCOUNT = 0.8
 EPISODES = 25000
 dim_env = [20, 46, 20] #number of dx, dy, v indices
 dim_act = 2
